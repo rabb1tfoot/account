@@ -12,18 +12,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-public class Account {
+public class User {
+
     @Id
     @GeneratedValue
     private Long id;
+
     private String userID;
-    private String accountNumber;
-    private LocalDateTime registedTime;
-    private LocalDateTime UnregistedTime;
-    private String balance;
     private String name;
-
-    @Enumerated(EnumType.STRING)
-    private AccountStatus accountStatus;
-
 }

@@ -4,6 +4,7 @@ import com.example.account.dto.*;
 
 public class BankService {
 
+
     public void AccountCheck(AccountCheckRequest accountCheckRequest)
     {
 

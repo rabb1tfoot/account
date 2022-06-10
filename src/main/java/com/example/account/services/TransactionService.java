@@ -26,6 +26,17 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
 
+    private static Long id = Long.valueOf(1);
+
+    public static Long GetId()
+    {
+        return id;
+    }
+
+    public Transaction getTransaction(Long id){
+        return transactionRepository.findById(id).get();
+    }
+
     @Transactional
     public String useBalance(String userID, String accountNumber, String amount) {
         List<Account> accounts = accountRepository.findByUserID(userID);
@@ -34,7 +45,11 @@ public class TransactionService {
         Integer limitMix = 100;
         boolean noUser = false;
         String returnvalue = "";
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime time  = LocalDateTime.of(now.getYear(),
+                now.getMonth(), now.getDayOfMonth(), now.getHour(), 0, 0);
         Integer selectedAccountIndex = -1;
+
         //사용자가 없는경우
         if(accounts.size() == 0)
         {
@@ -62,41 +77,43 @@ public class TransactionService {
                 }
 
                 //거래 금액이 잔액보다 큰 경우
-                else if(balance > iAmount)
+                else if(iAmount > balance)
                 {
                     transactionResult = TransactionResult.TRANSACTION_FAILED_REQUEST_OVERBALANCE;
                 }
 
                 //거래금액이 너무 작은 경우
-                else if(balance < limitMix)
+                else if(iAmount < limitMix)
                 {
                     transactionResult = TransactionResult.TRANSACTION_FAILED_LOWER_THAN_MINREQUEST;
                 }
 
                 //거래금액이 너무 큰 경우
-                else if(balance > limitMax)
+                else if(iAmount > limitMax)
                 {
-                    transactionResult = TransactionResult.TRANSACTION_FAILED_REQUEST_OVERBALANCE;
+                    transactionResult = TransactionResult.TRANSACTION_FAILED_HEIGHER_THAN_MAXREQUEST;
                 }
                 //성공
                 else
                 {
+                    int remain = balance - iAmount;
+
                     List<Transaction> listTransaction = transactionRepository.findAll();
                     transactionResult = TransactionResult.TRANSACTION_SUCCESS;
-                    int id = listTransaction.size() + 1;
                     returnvalue = "AccountNumber : " + accounts.get(i).getAccountNumber()
                             +"\nTransaction_id : " + id
                             +"\nTransaction_result : " + transactionResult.toString()
-                            +"\nTransaction Amount : " + amount
-                            +"\nTransaction Date : " + LocalDateTime.now();
+                            +"\nTransaction Amount : " + remain
+                            +"\nTransaction Date : " + time;
 
                 }
             }
-            //사용자가 없는경우
-            transactionResult = TransactionResult.TANSSACTION_FAILED_NOT_FOUND_USERID;
-        }
 
-        String strAccountNumber = accounts.get(selectedAccountIndex).getAccountNumber();
+        }
+        String strAccountNumber = "";
+        if(-1 != selectedAccountIndex) {
+            strAccountNumber = accounts.get(selectedAccountIndex).getAccountNumber();
+        }
         if(TransactionResult.TANSSACTION_FAILED_NOT_FOUND_USERID == transactionResult)
         {
             strAccountNumber = "";
@@ -105,11 +122,11 @@ public class TransactionService {
         Transaction tr = Transaction.builder()
                 .amount(amount)
                 .accountNumber(strAccountNumber)
-                .transactionTime(LocalDateTime.now())
+                .transactionTime(time)
                 .transactionResult(transactionResult)
                 .build();
         transactionRepository.save(tr);
-
+        id++;
         if(returnvalue.equals(""))
         {
             return transactionResult.toString();
@@ -126,6 +143,11 @@ public class TransactionService {
         Transaction transaction = transactionRepository.getById(transaction_id);
         TransactionResult transactionResult = TransactionResult.TRANSACTION_SUCCESS;
         String returnValue = "";
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime time  = LocalDateTime.of(now.getYear(),
+                now.getMonth(), now.getDayOfMonth(), now.getHour(), 0, 0);
+
         //원 거래 금액과 취소 금액이 다른경우
         if(transaction.getAmount() != amount)
         {
@@ -138,6 +160,16 @@ public class TransactionService {
             transactionResult = TransactionResult.TRANSACTION_FAILED_NOT_OWN_ACCOUNT;
             returnValue = transactionResult.toString();
         }
+
+        Transaction tr = Transaction.builder()
+                .amount(amount)
+                .accountNumber(accountNumber)
+                .transactionTime(time)
+                .transactionResult(transactionResult)
+                .build();
+        transactionRepository.save(tr);
+        id++;
+
         //실패 케이스
         if(TransactionResult.TRANSACTION_SUCCESS != transactionResult)
         {
@@ -148,9 +180,9 @@ public class TransactionService {
         {
             returnValue = "AccountNumber : " + accountNumber
                     +"\nTransaction_result : " + transactionResult.toString()
-                    +"\nTransaction_id : " + transaction_id
+                    +"\nTransaction_id : " + id
                     +"\nCancel amount : " + amount
-                    +"\nTransaction Date : "+ LocalDateTime.now();
+                    +"\nTransaction Date : "+ time;
 
             return returnValue;
         }
@@ -159,20 +191,34 @@ public class TransactionService {
     public String checkTransaction(Long transaction_id){
         String returnValue="";
         TransactionResult transactionResult = TransactionResult.TRANSACTION_SUCCESS;
-        Transaction transaction = transactionRepository.getById(transaction_id);
-
-        //트랜잭션이 없는경우
-        if(null == transaction)
+        List<Transaction> lstTr = transactionRepository.findAll();
+        boolean isFoundID = false;
+        for(int i = 0; i < transactionRepository.findAll().size(); ++i)
         {
-            transactionResult = TransactionResult.TANSSACTION_FAILED_NOT_FOUND_USERID;
+            if(lstTr.get(i).getId() == transaction_id)
+            {
+                isFoundID = true;
+                break;
+            }
+        }
+
+        if(false == isFoundID)
+        {
+            transactionResult = TransactionResult.TRANSACTION_FAILED_NOT_FOUND_TRANSACTIONID;
             return transactionResult.toString();
         }
-        returnValue = "AccountNumber : "+ transaction.getAccountNumber()
-        +"\nTransaction Method : "+transaction.getTransactionMethod()
-        +"\nTransaction ID : "+transaction.getId()
-        +"\nTransaction Amount : "+transaction.getAmount()
-        +"\nTransaction Date : "+transaction.getTransactionTime();
-        return returnValue;
+        else
+        {
+            Transaction transaction = transactionRepository.findById(transaction_id).get();
+
+            returnValue = "AccountNumber : "+ transaction.getAccountNumber()
+                    +"\nTransaction Method : "+transaction.getTransactionMethod()
+                    +"\nTransaction ID : "+id
+                    +"\nTransaction Amount : "+transaction.getAmount()
+                    +"\nTransaction Date : "+transaction.getTransactionTime();
+            return returnValue;
+        }
+
     }
 
 }

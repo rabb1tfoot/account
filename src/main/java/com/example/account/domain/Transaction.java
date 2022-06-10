@@ -19,6 +19,7 @@ public class Transaction {
     @GeneratedValue
     private Long id;
 
+    private String TransactionID;
     private String accountNumber;
     private LocalDateTime transactionTime;
     private TransactionResult transactionResult;

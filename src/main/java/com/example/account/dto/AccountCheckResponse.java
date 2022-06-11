@@ -1,7 +1,16 @@
 package com.example.account.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Map;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class AccountCheckResponse {
-    Map<String, Integer> receiving; // (계좌번호, 잔액) 정보를 Json list 형식으로 응답
+    String receving;
 }

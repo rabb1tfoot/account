@@ -54,7 +54,6 @@ public class TransactionService {
 
     }
 
-    @Transactional
     public String useBalance(String userID, String accountNumber, String amount) {
         List<Account> accounts = accountRepository.findByUserID(userID);
         TransactionResult transactionResult = TransactionResult.TANSSACTION_FAILED_NOT_FOUND_USERID;
@@ -114,6 +113,7 @@ public class TransactionService {
                 else
                 {
                     int remain = balance - iAmount;
+                    accounts.get(i).setBalance(String.valueOf(remain));
 
                     List<Transaction> listTransaction = transactionRepository.findAll();
                     transactionResult = TransactionResult.TRANSACTION_SUCCESS;
@@ -156,7 +156,6 @@ public class TransactionService {
         }
 
     }
-    @Transactional
     public String useCancelBalance(String transaction_id, String accountNumber, String amount) {
 
         Transaction transaction = transactionRepository.findByTransactionID(transaction_id);
@@ -199,6 +198,14 @@ public class TransactionService {
         //성공 케이스
         else
         {
+            Account account = accountRepository.findByAccountNumber(accountNumber);
+
+            Integer balance = Integer.parseInt(account.getBalance());
+            Integer iAmount = Integer.parseInt(amount);
+
+            int remain = balance + iAmount;
+            account.setBalance(String.valueOf(remain));
+
             returnValue = "AccountNumber : " + accountNumber
                     +"\nTransaction_result : " + transactionResult.toString()
                     +"\nTransaction_id : " + transactionId
@@ -209,7 +216,6 @@ public class TransactionService {
             return returnValue;
         }
     }
-    @Transactional
     public String checkTransaction(String transaction_id){
         String returnValue="";
         TransactionResult transactionResult = TransactionResult.TRANSACTION_SUCCESS;

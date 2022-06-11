@@ -16,7 +16,6 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    @Transactional
     public void LogIn(String userID, String name) {
 
         LogOut();
@@ -27,13 +26,11 @@ public class UserService {
                 .build();
         userRepository.save(user);
     }
-    
-    @Transactional
+
     public void LogOut() {
         userRepository.deleteAll();
     }
 
-    @Transactional
     public User GetUser(String userID){
         return userRepository.findByUserID(userID);
     }

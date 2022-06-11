@@ -137,6 +137,7 @@ class TransactionServiceTest {
                 +"\nCancel amount : " + tr.getAmount()
                 +"\nTransaction Date : "+ tr.getTransactionTime();
 
+        String remain = accountService.getAccount("tjwns992").get(0).getBalance();
 
         assertEquals(returnValue, result);
     }

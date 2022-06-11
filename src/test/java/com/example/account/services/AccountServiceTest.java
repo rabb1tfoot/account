@@ -29,12 +29,31 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Test 계좌생성")
+    @DisplayName("Test 계좌생성 : 성공")
     void testCreateAccount(){
         userService.LogIn("tjwns999", "서준선");
-        accountService.createAccount("tjwns999", "10000");
-        List<Account> lAccount = accountService.getAccount("tjwns999");
-        assertEquals("10000", lAccount.get(0).getBalance());
+        String result = accountService.createAccount("tjwns999", "10000");
+        List<Account> listAccount = accountService.getAccount("tjwns999");
+
+        String returnValue = "{{userId : tjwns999},\n" +
+                "{accountNumber : "+listAccount.get(0).getAccountNumber()+"},\n" +
+                "{registedTime : "+listAccount.get(0).getRegistedTime()+"}}";
+
+        assertEquals(returnValue, result);
+    }
+
+    @Test
+    @DisplayName("Test 계좌생성 실패 : 10개 넘게 만드는경우")
+    void testCreateExceedTenAccount(){
+        userService.LogIn("tjwns999", "서준선");
+        String result ="";
+        for(int i = 0; i < 11; ++ i)
+        {
+            accountService.createAccount("tjwns999", "10000");
+        }
+        result = accountService.createAccount("tjwns999", "10000");
+        String returnValue = AccountResult.ACCOUNT_FAILED_USER_HAVE_OVER_TEN_ACCOUNT.toString();
+        assertEquals(returnValue, result);
     }
 
     @Test

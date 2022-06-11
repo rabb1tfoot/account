@@ -21,11 +21,13 @@ public class AccountService{
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
 
-    @Transactional
-    public void createAccount(String userID, String balance){
+    public String createAccount(String userID, String balance){
 
         boolean checkAccountNumber = false;
         String strAccountNumber ="";
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime time  = LocalDateTime.of(now.getYear(),
+                now.getMonth(), now.getDayOfMonth(), now.getHour(), 0, 0);
         while(checkAccountNumber == false)
         {
             int accountNumber1 = (int) (Math.random() * 90000 + 10000);
@@ -43,18 +45,31 @@ public class AccountService{
                 }
             }
         }
-        Account account = Account.builder()
-                .userID(userID)
-                .balance(balance)
-                .accountNumber(strAccountNumber)
-                .accountStatus(AccountStatus.IN_USE)
-                .registedTime(LocalDateTime.now())
-                .name(userRepository.findByUserID(userID).getName())
-                .build();
-        accountRepository.save(account);
+
+        List<Account> listAccount = getAccount(userID);
+
+        if(listAccount.size() < 11)
+        {
+            Account account = Account.builder()
+                    .userID(userID)
+                    .balance(balance)
+                    .accountNumber(strAccountNumber)
+                    .accountStatus(AccountStatus.IN_USE)
+                    .registedTime(time)
+                    .name(userRepository.findByUserID(userID).getName())
+                    .build();
+            accountRepository.save(account);
+
+            //사용자 아이디, 생성된 계좌 번호, 등록일시(LocalDateTime)
+            String returnValue = "{{userId : "+userID+"},\n" +
+                    "{accountNumber : "+strAccountNumber+"},\n" +
+                    "{registedTime : "+time+"}}";
+
+            return returnValue;
+        }
+        return AccountResult.ACCOUNT_FAILED_USER_HAVE_OVER_TEN_ACCOUNT.toString();
     }
 
-    @Transactional
     public String TerminateAccount(String userID, String accountNumber){
         List<Account> accounts = accountRepository.findByUserID(userID);
         AccountResult accountResult;
@@ -105,7 +120,6 @@ public class AccountService{
         return accountResult.toString();
     }
 
-    @Transactional
     public String getAccountJson(String userID){
         //(계좌번호, 잔액) 정보를 Json list 형식으로 응답
         List<Account> listAccount = getAccount(userID);

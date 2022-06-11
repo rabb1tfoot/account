@@ -10,4 +10,5 @@ import java.util.List;
 public interface AccountRepository extends JpaRepository<Account, Long> { //활용할 엔티티, 키
 
     List<Account> findByUserID(String userID);
+    Account findByAccountNumber(String accountNumber);
 }

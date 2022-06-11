@@ -8,5 +8,4 @@ public enum AccountResult {
     ACCOUNT_FAILED_ALREADY_UNREGISTED,
     ACCOUNT_FAILED_REMAIN_BALANCE,
 
-
 }

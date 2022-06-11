@@ -27,7 +27,8 @@ public class UserService {
                 .build();
         userRepository.save(user);
     }
-
+    
+    @Transactional
     public void LogOut() {
         userRepository.deleteAll();
     }

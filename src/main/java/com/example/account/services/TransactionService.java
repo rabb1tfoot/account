@@ -26,15 +26,32 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
 
-    private static Long id = Long.valueOf(1);
+    private static int transactionId = 1;
 
-    public static Long GetId()
+    public static int GetTransactionId()
     {
-        return id;
+        return transactionId;
     }
 
-    public Transaction getTransaction(Long id){
-        return transactionRepository.findById(id).get();
+    public Transaction getTransaction(String transactionId){
+        return transactionRepository.findByTransactionID(transactionId);
+    }
+
+    public String getTxID(String accountNumber, String amount, TransactionMethod transactionMethod)
+    {
+        List<Transaction> listTransaction = transactionRepository.findAll();
+        for(int i  = 0; i < listTransaction.size(); ++i)
+        {
+            Transaction tr = listTransaction.get(i);
+            if(tr.getAmount().equals(amount)
+                && tr.getAccountNumber().equals(accountNumber)
+                && tr.getTransactionMethod().equals(transactionMethod))
+            {
+                return tr.getTransactionID();
+            }
+        }
+        return new String();
+
     }
 
     @Transactional
@@ -101,7 +118,7 @@ public class TransactionService {
                     List<Transaction> listTransaction = transactionRepository.findAll();
                     transactionResult = TransactionResult.TRANSACTION_SUCCESS;
                     returnvalue = "AccountNumber : " + accounts.get(i).getAccountNumber()
-                            +"\nTransaction_id : " + id
+                            +"\nTransaction_id : " + transactionId
                             +"\nTransaction_result : " + transactionResult.toString()
                             +"\nTransaction Amount : " + remain
                             +"\nTransaction Date : " + time;
@@ -124,9 +141,11 @@ public class TransactionService {
                 .accountNumber(strAccountNumber)
                 .transactionTime(time)
                 .transactionResult(transactionResult)
+                .transactionMethod(TransactionMethod.BALANCE_USE)
+                .transactionID(String.valueOf(transactionId))
                 .build();
         transactionRepository.save(tr);
-        id++;
+        transactionId++;
         if(returnvalue.equals(""))
         {
             return transactionResult.toString();
@@ -138,9 +157,9 @@ public class TransactionService {
 
     }
     @Transactional
-    public String useCancelBalance(Long transaction_id, String accountNumber, String amount) {
+    public String useCancelBalance(String transaction_id, String accountNumber, String amount) {
 
-        Transaction transaction = transactionRepository.getById(transaction_id);
+        Transaction transaction = transactionRepository.findByTransactionID(transaction_id);
         TransactionResult transactionResult = TransactionResult.TRANSACTION_SUCCESS;
         String returnValue = "";
 
@@ -155,7 +174,7 @@ public class TransactionService {
             returnValue = transactionResult.toString();
         }
         //트랜잭션이 해당 계좌의 거래가 아닌경우
-        if(transaction.getAccountNumber() != accountNumber)
+        else if(transaction.getAccountNumber() != accountNumber)
         {
             transactionResult = TransactionResult.TRANSACTION_FAILED_NOT_OWN_ACCOUNT;
             returnValue = transactionResult.toString();
@@ -165,14 +184,16 @@ public class TransactionService {
                 .amount(amount)
                 .accountNumber(accountNumber)
                 .transactionTime(time)
+                .transactionID(String.valueOf(transactionId))
                 .transactionResult(transactionResult)
+                .transactionMethod(TransactionMethod.BALANCE_USE_CANCLE)
                 .build();
         transactionRepository.save(tr);
-        id++;
 
         //실패 케이스
         if(TransactionResult.TRANSACTION_SUCCESS != transactionResult)
         {
+            transactionId++;
             return returnValue;
         }
         //성공 케이스
@@ -180,22 +201,23 @@ public class TransactionService {
         {
             returnValue = "AccountNumber : " + accountNumber
                     +"\nTransaction_result : " + transactionResult.toString()
-                    +"\nTransaction_id : " + id
+                    +"\nTransaction_id : " + transactionId
                     +"\nCancel amount : " + amount
                     +"\nTransaction Date : "+ time;
 
+            transactionId++;
             return returnValue;
         }
     }
     @Transactional
-    public String checkTransaction(Long transaction_id){
+    public String checkTransaction(String transaction_id){
         String returnValue="";
         TransactionResult transactionResult = TransactionResult.TRANSACTION_SUCCESS;
         List<Transaction> lstTr = transactionRepository.findAll();
         boolean isFoundID = false;
         for(int i = 0; i < transactionRepository.findAll().size(); ++i)
         {
-            if(lstTr.get(i).getId() == transaction_id)
+            if(lstTr.get(i).getTransactionID() == transaction_id)
             {
                 isFoundID = true;
                 break;
@@ -209,11 +231,11 @@ public class TransactionService {
         }
         else
         {
-            Transaction transaction = transactionRepository.findById(transaction_id).get();
+            Transaction transaction = transactionRepository.findByTransactionID(transaction_id);
 
             returnValue = "AccountNumber : "+ transaction.getAccountNumber()
                     +"\nTransaction Method : "+transaction.getTransactionMethod()
-                    +"\nTransaction ID : "+id
+                    +"\nTransaction ID : " + transaction_id
                     +"\nTransaction Amount : "+transaction.getAmount()
                     +"\nTransaction Date : "+transaction.getTransactionTime();
             return returnValue;

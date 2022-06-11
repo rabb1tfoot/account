@@ -1,5 +1,6 @@
 package com.example.account.services;
 
+import com.example.account.Type.TransactionMethod;
 import com.example.account.Type.TransactionResult;
 import com.example.account.domain.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,14 +35,14 @@ class TransactionServiceTest {
         accountService.createAccount("tjwns999", "10000");
         String number = accountService.getAccount("tjwns999").get(0).getAccountNumber();
         String result = transactionService.useBalance("tjwns999", number, "3000");
-        Transaction tr = transactionService.getTransaction(Long.valueOf(3));
-        LocalDateTime time = tr.getTransactionTime();
+        String txID = transactionService.getTxID(number, "3000", TransactionMethod.BALANCE_USE);
+        Transaction tr = transactionService.getTransaction(txID);
 
         String returnValue = "AccountNumber : " + number
-                +"\nTransaction_id : " + String.valueOf(Integer.parseInt(tr.getId().toString()) -1) //"1"
+                +"\nTransaction_id : " + tr.getTransactionID()
                 +"\nTransaction_result : " + TransactionResult.TRANSACTION_SUCCESS
                 +"\nTransaction Amount : " + "7000"
-                +"\nTransaction Date : " + time;
+                +"\nTransaction Date : " + tr.getTransactionTime();
 
         assertEquals(returnValue, result);
     }
@@ -50,7 +51,7 @@ class TransactionServiceTest {
     @DisplayName("Test 잔액사용 : 사용자가 없는경우")
     void testUseBalanceNoUser(){
         userService.LogIn("tjwns998", "서준선");
-        String result = transactionService.useBalance("tjwns999", "1111133333", "3000");
+        String result = transactionService.useBalance("tjwns9999", "1111133333", "3000");
         String returnValue = TransactionResult.TANSSACTION_FAILED_NOT_FOUND_USERID.toString();
 
         assertEquals(returnValue, result);
@@ -110,9 +111,9 @@ class TransactionServiceTest {
     @DisplayName("Test 잔액 사용 : 거래금액이 너무 큰 경우")
     void testUseBalanceLimitMaxAmount(){
         userService.LogIn("tjwns993", "서준선");
-        accountService.createAccount("tjwns993", "3000");
+        accountService.createAccount("tjwns993", "300000000");
         String number = accountService.getAccount("tjwns993").get(0).getAccountNumber();
-        String result = transactionService.useBalance("tjwns993", number, "10000000");
+        String result = transactionService.useBalance("tjwns993", number, "100000000");
         String returnValue = TransactionResult.TRANSACTION_FAILED_HEIGHER_THAN_MAXREQUEST.toString();
 
         assertEquals(returnValue, result);
@@ -125,12 +126,14 @@ class TransactionServiceTest {
         accountService.createAccount("tjwns992", "10000");
         String number = accountService.getAccount("tjwns992").get(0).getAccountNumber();
         String result = transactionService.useBalance("tjwns992", number, "3000");
-        result = transactionService.useCancelBalance(Long.valueOf(3), number, "3000");
-        Transaction tr = transactionService.getTransaction(Long.valueOf(4));
+        String trID = transactionService.getTxID(number, "3000", TransactionMethod.BALANCE_USE);
+        result = transactionService.useCancelBalance(trID, number, "3000");
+        trID = transactionService.getTxID(number, "3000", TransactionMethod.BALANCE_USE_CANCLE);
+        Transaction tr = transactionService.getTransaction(trID);
 
         String returnValue = "AccountNumber : " + number
                 +"\nTransaction_result : " + tr.getTransactionResult()
-                +"\nTransaction_id : " + String.valueOf(Integer.parseInt(tr.getId().toString()) -1) // 3
+                +"\nTransaction_id : " + tr.getTransactionID()
                 +"\nCancel amount : " + tr.getAmount()
                 +"\nTransaction Date : "+ tr.getTransactionTime();
 
@@ -145,8 +148,8 @@ class TransactionServiceTest {
         accountService.createAccount("tjwns991", "10000");
         String number = accountService.getAccount("tjwns991").get(0).getAccountNumber();
         String result = transactionService.useBalance("tjwns991", number, "3000");
-        result = transactionService.useCancelBalance(Long.valueOf(3), number, "2000");
-        Transaction tr = transactionService.getTransaction(Long.valueOf(4));
+        result = transactionService.useCancelBalance("1", number, "2000");
+        Transaction tr = transactionService.getTransaction("2");
 
         String returnValue = TransactionResult.TRANSACTION_FAILED_NOT_CORRECT_AMOUNT.toString();
 
@@ -160,8 +163,11 @@ class TransactionServiceTest {
         accountService.createAccount("tjwns991", "10000");
         String number = accountService.getAccount("tjwns991").get(0).getAccountNumber();
         String result = transactionService.useBalance("tjwns991", "number", "3000");
-        result = transactionService.useCancelBalance(Long.valueOf(3), "1111122222", "3000");
-        Transaction tr = transactionService.getTransaction(Long.valueOf(4));
+
+        String txid = transactionService.getTxID(number, "3000", TransactionMethod.BALANCE_USE);
+        result = transactionService.useCancelBalance(txid, "1111122222", "3000");
+        txid = transactionService.getTxID(number, "3000", TransactionMethod.BALANCE_USE_CANCLE);
+        Transaction tr = transactionService.getTransaction(txid);
 
         String returnValue = TransactionResult.TRANSACTION_FAILED_NOT_OWN_ACCOUNT.toString();
 
@@ -175,12 +181,12 @@ class TransactionServiceTest {
         accountService.createAccount("tjwns991", "10000");
         String number = accountService.getAccount("tjwns991").get(0).getAccountNumber();
         String result = transactionService.useBalance("tjwns991", "number", "3000");
-        result = transactionService.checkTransaction(Long.valueOf(3));
-        Transaction tr = transactionService.getTransaction(Long.valueOf(3));
+        result = transactionService.checkTransaction("1");
+        Transaction tr = transactionService.getTransaction("1");
 
         String returnValue = "AccountNumber : "+ tr.getAccountNumber()
                 +"\nTransaction Method : "+tr.getTransactionMethod()
-                +"\nTransaction ID : "+String.valueOf(Integer.parseInt(tr.getId().toString()) -1) // 3
+                +"\nTransaction ID : "+tr.getTransactionID()
                 +"\nTransaction Amount : "+tr.getAmount()
                 +"\nTransaction Date : "+tr.getTransactionTime();
 
@@ -194,7 +200,7 @@ class TransactionServiceTest {
         accountService.createAccount("tjwns990", "10000");
         String number = accountService.getAccount("tjwns990").get(0).getAccountNumber();
         String result = transactionService.useBalance("tjwns990", "number", "3000");
-        result = transactionService.checkTransaction(Long.valueOf(1));
+        result = transactionService.checkTransaction("-1");
         String returnValue = TransactionResult.TRANSACTION_FAILED_NOT_FOUND_TRANSACTIONID.toString();
 
         assertEquals(returnValue, result);
